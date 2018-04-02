@@ -13,15 +13,19 @@ The only valid characters fall into [a-zA-Z] range.
 #include <cctype>
 #include <sstream>
 
-std::string compress(std::string &input)
+const std::string compress(const std::string &input)
 {
+
+    if (input.empty()) {
+        throw "Input is empty!";
+    }
 
     size_t len = input.size();
     std::ostringstream sstream;
 
     char prev = input[0];
-    int charCount = 0;
-    size_t count = len;
+    size_t charCount = 0;
+    size_t count = 0;
 
     for (const auto ch:input) {
 
@@ -29,39 +33,43 @@ std::string compress(std::string &input)
             throw "Invalid input, allowed character range [a-zA-Z]";
         }
 
-        if(prev != ch || count == 1) {
+        // Keep track of repeated char count untill a different char is seen.
+        // If different char is encontered push the previous char along with its count to stream.
+        // Else block has stream statement to handle single char cases and to make sure repeated chars at the end are not left out.
+        if(prev != ch) {
             sstream << prev << charCount;
             charCount = 1;
             prev = ch;
         } else {
             charCount++;
+            if (count == len - 1) {
+                sstream << prev << charCount;
+            }
         }
 
-        count --;
+        count++;
     }
 
-    std::string compInput = sstream.str();
+    const std::string compOutput = sstream.str();
 
-    if (len < compInput.size()) {
+    if (len < compOutput.size()) {
         throw "Too large after compression";
     }
 
-    return compInput;
+    return compOutput;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
-
-    std::string input = "aabccdaaaaa";
+    const std::string input = "aabccdaaaaa";
 
     try
     {
-        std::string compInput = compress(input);
-        std::cout << "Compressed output: " << compInput << std::endl;
+        const std::string compOutput = compress(input);
+        std::cout << "Compressed output: " << compOutput << "\n";
     }
     catch(const char* errorMsg)
     {
-        std::cout << "Error: " << errorMsg << std::endl;
+        std::cout << "Error: " << errorMsg << "\n";
     }
-    return 0;
 }
