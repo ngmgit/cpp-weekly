@@ -29,7 +29,7 @@ const std::string compress(const std::string &input)
 
     for (const auto ch:input) {
 
-        if (!std::isalpha(ch)) {
+        if (!std::isalpha(static_cast<unsigned char>(ch))) {
             throw "Invalid input, allowed character range [a-zA-Z]";
         }
 
