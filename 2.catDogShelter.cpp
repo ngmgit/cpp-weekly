@@ -11,19 +11,19 @@ Create the data structures to maintain this system and implement operations such
 #include <iostream>
 #include <queue>
 #include <variant>
+#include <optional>
+#include <utility>
 
 enum class AnimalTypes { CAT, DOG };
 
 class Animal {
  public:
-    Animal() {timeStamp += timeStamp;};
-    static unsigned int timeStamp;
+    Animal();
     void print();
 };
 void Animal::print() {
     std::cout << "Animal\n";
 }
-unsigned int Animal::timeStamp = 0;
 
 
 /***** Cat base class***/
@@ -55,31 +55,29 @@ void Dog::print() {
 class AnimalShelter {
 
 public:
-    template <typename T>
-    void enqueue(T t);
-    template <typename T>
-    T dequeueAny();
-    Cat dequeueCat();
-    Dog dequeueDog();
+    void enqueue(Cat cat);
+    void enqueue(Dog dog);
+    std::optional< std::variant<Cat, Dog> > dequeueAny();
+    std::optional<Cat> dequeueCat();
+    std::optional<Dog> dequeueDog();
+    bool empty();
 
 private:
-    std::queue<Cat> cats;
-    std::queue<Dog> dogs;
+    static unsigned int timeStamp;
+    std::queue<std::pair<int, Cat>> cats;
+    std::queue<std::pair<int, Dog>> dogs;
 };
+unsigned int AnimalShelter::timeStamp = 0;
 
-
-template <typename T>
-void AnimalShelter::enqueue(T t) {
-    if (t->getType() == AnimalTypes::CAT) {
-        cats.push(t);
-    }
-
-    dogs.push(t);
+void AnimalShelter::enqueue(Cat cat) {
+    cats.push(std::make_pair(timeStamp++, cat));
 }
 
+void AnimalShelter::enqueue(Dog dog) {
+    dogs.push(std::make_pair(timeStamp++, dog));
+}
 
-template <typename T>
-T AnimalShelter::dequeueAny() {
+std::optional< std::variant<Cat, Dog> > AnimalShelter::dequeueAny() {
     if (cats.empty()) {
         return dequeueDog();
     }
@@ -88,45 +86,54 @@ T AnimalShelter::dequeueAny() {
         return dequeueCat();
     }
 
-    Cat oldestCat = cats.front;
-    Dog oldestDog = dogs.front;
+    std::pair<unsigned int, Cat> oldestCat = cats.front();
+    std::pair<unsigned int, Dog> oldestDog = dogs.front();
 
-    if(oldestCat.timeStamp > oldestDog.timeStamp) {
+    if(std::get<0>(oldestCat) > std::get<0>(oldestDog)) {
         return dequeueCat();
     }
 
     return dequeueDog();
 }
 
-Dog AnimalShelter::dequeueDog() {
+std::optional<Dog> AnimalShelter::dequeueDog() {
     if(dogs.empty()) {
-        throw "Not available";
+        return {};
     }
-    Dog dog = dogs.front();
+    std::pair<unsigned int, Dog> dog = dogs.front();
     dogs.pop();
-    return dog;
+    return std::get<1>(dog);
 }
 
-Cat AnimalShelter::dequeueCat() {
+std::optional<Cat> AnimalShelter::dequeueCat() {
     if(cats.empty()) {
-        throw "Not available";
+        return {};
     }
-    Cat cat = cats.front();
+    std::pair<unsigned int, Cat> cat = cats.front();
     cats.pop();
-    return cat;
+    return std::get<1>(cat);
+}
+
+bool AnimalShelter::empty() {
+    return cats.empty() && dogs.empty();
 }
 
 int main()
 {
     AnimalShelter animShel;
-    std::variant<Cat, Dog> catDog;
+
 
     try {
-        animShel.enqueue(new Cat());
-        animShel.enqueue(new Dog());
-        animShel.enqueue(new Dog());
-        Cat temps = animShel.dequeueCat();
-        catDog = animShel.dequeueAny();
+        animShel.enqueue(Cat{});
+        animShel.enqueue(Dog{});
+        animShel.enqueue(Dog{});
+        std::optional<Cat> cat1 = animShel.dequeueCat();
+
+        animShel.enqueue(Cat{});
+
+        std::optional< std::variant<Cat, Dog> > catDog = animShel.dequeueAny();
+        std::optional<Cat> cat2 = animShel.dequeueCat();
+        std::optional<Dog> dog2 = animShel.dequeueDog();
     }
     catch(const char* errorMsg) {
         std::cout << "Error: " << errorMsg << "\n";
